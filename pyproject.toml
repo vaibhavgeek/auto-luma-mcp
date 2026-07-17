@@ -1,0 +1,9 @@
+[project]
+name = "lumabot-p6-integration-akash"
+version = "0.1.0"
+description = "Independently testable fake-stack integration and Akash deployment fixtures for LumaBot."
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+package = false

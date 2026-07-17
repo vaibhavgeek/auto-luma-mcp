@@ -1,0 +1,134 @@
+name: lumabot-fixture
+
+services:
+  postgres:
+    image: postgres:16.3-alpine
+    environment:
+      POSTGRES_DB: lumabot
+      POSTGRES_USER: lumabot
+      POSTGRES_PASSWORD: fixture_only_change_me
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumabot -d lumabot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mcp-server:
+    image: python:3.12.4-slim-bookworm
+    working_dir: /app
+    command: ["python", "scripts/fake_http_service.py"]
+    volumes:
+      - .:/app:ro
+    environment:
+      SERVICE_NAME: mcp-server
+      PORT: "8080"
+      RUNTIME_URL: http://runtime-api:8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      runtime-api:
+        condition: service_started
+
+  runtime-api:
+    image: python:3.12.4-slim-bookworm
+    working_dir: /app
+    command: ["python", "scripts/fake_http_service.py"]
+    volumes:
+      - .:/app:ro
+    environment:
+      SERVICE_NAME: runtime-api
+      PORT: "8080"
+      RUNTIME_INTERNAL_TOKEN: fixture-internal-token
+      DATABASE_HOST: postgres
+      NEXLA_MCP_ENDPOINT: http://fake-nexla:8080/mcp
+      AGENTMAIL_ENDPOINT: http://fake-agentmail:8080
+      ZERO_ENDPOINT: http://fake-zero:8080
+      AUTO_REGISTRATION_ENABLED: "false"
+    ports:
+      - "8090:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fake-nexla:
+        condition: service_started
+      fake-agentmail:
+        condition: service_started
+      fake-zero:
+        condition: service_started
+
+  runtime-worker:
+    image: python:3.12.4-slim-bookworm
+    working_dir: /app
+    command: ["python", "scripts/fake_http_service.py"]
+    shm_size: "1gb"
+    volumes:
+      - .:/app:ro
+    environment:
+      SERVICE_NAME: runtime-worker
+      PORT: "8080"
+      WORKER_CONCURRENCY: "2"
+      PLAYWRIGHT_CHROMIUM: "enabled"
+      RUNTIME_INTERNAL_TOKEN: fixture-internal-token
+    depends_on:
+      runtime-api:
+        condition: service_started
+
+  runtime-scheduler:
+    image: python:3.12.4-slim-bookworm
+    working_dir: /app
+    command: ["python", "scripts/fake_http_service.py"]
+    volumes:
+      - .:/app:ro
+    environment:
+      SERVICE_NAME: runtime-scheduler
+      PORT: "8080"
+      SCHEDULER_REPLICAS: "1"
+      IDEMPOTENT_SCHEDULING: "true"
+      RUNTIME_INTERNAL_TOKEN: fixture-internal-token
+    depends_on:
+      runtime-api:
+        condition: service_started
+
+  fixture-luma-site:
+    image: python:3.12.4-slim-bookworm
+    working_dir: /app
+    command: ["python", "scripts/fake_http_service.py"]
+    volumes:
+      - .:/app:ro
+    environment:
+      SERVICE_NAME: fixture-luma-site
+      PORT: "8080"
+    ports:
+      - "8091:8080"
+
+  fake-nexla:
+    image: python:3.12.4-slim-bookworm
+    working_dir: /app
+    command: ["python", "scripts/fake_http_service.py"]
+    volumes:
+      - .:/app:ro
+    environment:
+      SERVICE_NAME: fake-nexla
+      PORT: "8080"
+
+  fake-agentmail:
+    image: python:3.12.4-slim-bookworm
+    working_dir: /app
+    command: ["python", "scripts/fake_http_service.py"]
+    volumes:
+      - .:/app:ro
+    environment:
+      SERVICE_NAME: fake-agentmail
+      PORT: "8080"
+
+  fake-zero:
+    image: python:3.12.4-slim-bookworm
+    working_dir: /app
+    command: ["python", "scripts/fake_http_service.py"]
+    volumes:
+      - .:/app:ro
+    environment:
+      SERVICE_NAME: fake-zero
+      PORT: "8080"
