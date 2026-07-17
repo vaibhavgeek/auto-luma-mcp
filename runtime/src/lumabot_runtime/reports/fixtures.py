@@ -13,7 +13,7 @@ def evidence(value: object, confidence: float = 0.9, source: str = "fixture") ->
     return EvidenceField(
         value=value,
         source=source,
-        source_url=f"https://nexla.local/fixtures/{source}",
+        source_url=f"https://pdl.local/fixtures/{source}",
         confidence=confidence,
     )
 
