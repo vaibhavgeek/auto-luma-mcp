@@ -1,0 +1,48 @@
+---
+version: "2.0"
+
+services:
+  lumabot-runtime-api:
+    image: ghcr.io/lumabot/lumabot-runtime-api:2026.07.17-p6
+    expose:
+      - port: 8080
+        as: 80
+        to:
+          - global: true
+    env:
+      - PUBLIC_HEALTH_PATH=/healthz
+      - INTERNAL_ROUTE_PREFIX=/internal
+      - RUNTIME_INTERNAL_TOKEN=$LUMABOT_RUNTIME_INTERNAL_TOKEN
+      - DATABASE_URL=$LUMABOT_DATABASE_URL
+      - SESSION_ENCRYPTION_KEY=$LUMABOT_SESSION_ENCRYPTION_KEY
+      - AGENTMAIL_INBOX_ID=$AGENTMAIL_INBOX_ID
+      - AGENTMAIL_API_KEY=$AGENTMAIL_API_KEY
+      - AGENTMAIL_WEBHOOK_SECRET=$AGENTMAIL_WEBHOOK_SECRET
+      - NEXLA_MCP_ENDPOINT=$NEXLA_MCP_ENDPOINT
+      - NEXLA_TOOLSET_ID=$NEXLA_TOOLSET_ID
+      - ZERO_API_KEY=$ZERO_API_KEY
+      - AUTO_REGISTRATION_ENABLED=false
+      - PHYSICAL_MAIL_REQUIRES_CONFIRMATION=true
+
+profiles:
+  compute:
+    lumabot-runtime-api:
+      resources:
+        cpu:
+          units: 0.5
+        memory:
+          size: 512Mi
+        storage:
+          size: 1Gi
+  placement:
+    dcloud:
+      pricing:
+        lumabot-runtime-api:
+          denom: uakt
+          amount: 1500
+
+deployment:
+  lumabot-runtime-api:
+    dcloud:
+      profile: lumabot-runtime-api
+      count: 1

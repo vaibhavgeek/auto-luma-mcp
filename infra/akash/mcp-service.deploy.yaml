@@ -1,0 +1,39 @@
+---
+version: "2.0"
+
+services:
+  lumabot-mcp:
+    image: ghcr.io/lumabot/lumabot-mcp:2026.07.17-p6
+    expose:
+      - port: 8080
+        as: 80
+        to:
+          - global: true
+    env:
+      - MCP_TRANSPORT=streamable-http
+      - PUBLIC_HEALTH_PATH=/healthz
+      - RUNTIME_URL=$LUMABOT_RUNTIME_URL
+      - RUNTIME_INTERNAL_TOKEN=$LUMABOT_RUNTIME_INTERNAL_TOKEN
+
+profiles:
+  compute:
+    lumabot-mcp:
+      resources:
+        cpu:
+          units: 0.25
+        memory:
+          size: 256Mi
+        storage:
+          size: 512Mi
+  placement:
+    dcloud:
+      pricing:
+        lumabot-mcp:
+          denom: uakt
+          amount: 1000
+
+deployment:
+  lumabot-mcp:
+    dcloud:
+      profile: lumabot-mcp
+      count: 1

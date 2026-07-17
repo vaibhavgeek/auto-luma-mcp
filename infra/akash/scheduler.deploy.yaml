@@ -1,0 +1,36 @@
+---
+version: "2.0"
+
+services:
+  lumabot-scheduler:
+    image: ghcr.io/lumabot/lumabot-scheduler:2026.07.17-p6
+    expose: []
+    env:
+      - DATABASE_URL=$LUMABOT_DATABASE_URL
+      - RUNTIME_API_URL=$LUMABOT_RUNTIME_URL
+      - RUNTIME_INTERNAL_TOKEN=$LUMABOT_RUNTIME_INTERNAL_TOKEN
+      - SCHEDULER_REPLICAS=1
+      - IDEMPOTENT_SCHEDULING=true
+
+profiles:
+  compute:
+    lumabot-scheduler:
+      resources:
+        cpu:
+          units: 0.25
+        memory:
+          size: 256Mi
+        storage:
+          size: 512Mi
+  placement:
+    dcloud:
+      pricing:
+        lumabot-scheduler:
+          denom: uakt
+          amount: 1000
+
+deployment:
+  lumabot-scheduler:
+    dcloud:
+      profile: lumabot-scheduler
+      count: 1

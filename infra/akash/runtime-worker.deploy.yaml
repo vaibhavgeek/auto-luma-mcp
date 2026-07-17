@@ -1,0 +1,49 @@
+---
+version: "2.0"
+
+services:
+  lumabot-runtime-worker:
+    image: ghcr.io/lumabot/lumabot-runtime-worker:2026.07.17-p6
+    expose: []
+    params:
+      storage:
+        data:
+          mount: /var/lib/lumabot
+    env:
+      - DATABASE_URL=$LUMABOT_DATABASE_URL
+      - RUNTIME_INTERNAL_TOKEN=$LUMABOT_RUNTIME_INTERNAL_TOKEN
+      - RUNTIME_API_URL=$LUMABOT_RUNTIME_URL
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+      - PLAYWRIGHT_CHROMIUM_ENABLED=true
+      - WORKER_CONCURRENCY=$LUMABOT_WORKER_CONCURRENCY
+      - NEXLA_MCP_ENDPOINT=$NEXLA_MCP_ENDPOINT
+      - AGENTMAIL_API_KEY=$AGENTMAIL_API_KEY
+      - ZERO_API_KEY=$ZERO_API_KEY
+
+profiles:
+  compute:
+    lumabot-runtime-worker:
+      resources:
+        cpu:
+          units: 1
+        memory:
+          size: 1Gi
+        storage:
+          - size: 2Gi
+          - name: data
+            size: 1Gi
+            attributes:
+              persistent: false
+              class: beta3
+  placement:
+    dcloud:
+      pricing:
+        lumabot-runtime-worker:
+          denom: uakt
+          amount: 2500
+
+deployment:
+  lumabot-runtime-worker:
+    dcloud:
+      profile: lumabot-runtime-worker
+      count: 1
