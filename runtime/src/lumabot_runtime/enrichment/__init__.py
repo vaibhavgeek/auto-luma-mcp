@@ -10,6 +10,7 @@ from lumabot_runtime.enrichment.models import (
     UserProfile,
 )
 from lumabot_runtime.enrichment.resolution import IdentityMatch, IdentityResolver, normalize_social_url
+from lumabot_runtime.enrichment.service import EnrichmentBundle, EnrichmentService
 
 __all__ = [
     "EnrichedCompany",
@@ -20,6 +21,8 @@ __all__ = [
     "EvidenceField",
     "IdentityMatch",
     "IdentityResolver",
+    "EnrichmentBundle",
+    "EnrichmentService",
     "RawCompany",
     "RawPerson",
     "UserProfile",

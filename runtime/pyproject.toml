@@ -1,7 +1,7 @@
 [project]
 name = "lumabot-runtime"
 version = "0.1.0"
-description = "Independently testable LumaBot People Data Labs enrichment, scoring, and reporting workstream."
+description = "Independently testable LumaBot provider enrichment, scoring, and reporting workstream."
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.0",

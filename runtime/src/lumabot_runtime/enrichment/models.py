@@ -29,8 +29,10 @@ class EvidenceField(BaseModel):
 class RawPerson(BaseModel):
     person_id: str
     full_name: str
+    email: str | None = None
     social_urls: list[str] = Field(default_factory=list)
     company: str | None = None
+    company_domain: str | None = None
     title: str | None = None
     location: str | None = None
     event_context: str | None = None
@@ -63,6 +65,8 @@ class EnrichedPerson(BaseModel):
     social_urls: list[EvidenceField] = Field(default_factory=list)
     profile_image_url: EvidenceField | None = None
     interests: list[EvidenceField] = Field(default_factory=list)
+    professional_email: EvidenceField | None = None
+    email_verification: EvidenceField | None = None
     sources_agreeing: int = 1
     enrichment_status: EnrichmentStatus = EnrichmentStatus.ENRICHED
     error: str | None = None
@@ -110,4 +114,3 @@ class EventAttendee(BaseModel):
     social_urls: list[str] = Field(default_factory=list)
     profile_image_url: str | None = None
     status: str = "attending"
-
