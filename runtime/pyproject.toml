@@ -1,0 +1,57 @@
+[project]
+name = "lumabot-runtime"
+version = "0.1.0"
+description = "Independently testable LumaBot runtime API, jobs, email, actions, and Zero adapters."
+requires-python = ">=3.12"
+dependencies = [
+    "email-validator>=2.2.0",
+    "fastapi>=0.116.0",
+    "httpx>=0.28.0",
+    "pydantic>=2.11.0",
+    "uvicorn>=0.35.0",
+]
+
+[project.optional-dependencies]
+agentmail = ["agentmail>=0.0.1"]
+postgres = ["asyncpg>=0.30.0"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.0.0",
+    "ruff>=0.12.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lumabot_runtime"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "S"]
+ignore = [
+    "S101",
+    "S105",
+    "S106",
+    "S608",
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "live_agentmail: sends one real AgentMail smoke-test email when explicitly enabled",
+]
