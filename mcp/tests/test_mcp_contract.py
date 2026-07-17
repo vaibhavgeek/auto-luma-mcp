@@ -27,6 +27,7 @@ async def test_tool_list_contract(client_session: ClientSession) -> None:
     result = await client_session.list_tools()
     tools = {tool.name: tool for tool in result.tools}
     assert set(tools) == {
+        "check_login",
         "login",
         "set_user_profile",
         "recommend_events",

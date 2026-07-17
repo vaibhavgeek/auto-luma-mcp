@@ -17,6 +17,7 @@ from lumabot_mcp.models import ToolResponse
 from lumabot_mcp.runtime_client import FakeRuntimeClient, HttpRuntimeClient, RuntimeClient
 from lumabot_mcp.settings import Settings
 from lumabot_mcp.tools.actions import handle_confirm_action
+from lumabot_mcp.tools.check_login import handle_check_login
 from lumabot_mcp.tools.events import handle_get_user_events, handle_recommend_events
 from lumabot_mcp.tools.jobs import handle_get_job_status
 from lumabot_mcp.tools.login import handle_login
@@ -65,6 +66,17 @@ def create_mcp_server(runtime: RuntimeClient | None = None) -> FastMCP:
             attempt_id=attempt_id,
             code=code,
         )
+
+    @mcp.tool()
+    async def check_login(
+        email: Annotated[
+            str,
+            Field(description="Email address to check for an existing valid Luma session."),
+        ],
+    ) -> ToolResponse:
+        """Check if a saved Luma session exists and is still valid."""
+        log_tool_call(logger, "check_login", {"email": email})
+        return await handle_check_login(runtime_client, email=email)
 
     @mcp.tool()
     async def set_user_profile(
@@ -232,6 +244,14 @@ def main() -> None:
     configure_logging(settings.log_level)
     app = create_asgi_app()
     uvicorn.run(app, host=settings.host, port=settings.port)
+
+
+def main_stdio() -> None:
+    """Run the MCP server over stdio transport (for Claude Desktop integration)."""
+    settings = Settings.from_env()
+    configure_logging(settings.log_level)
+    mcp = create_mcp_server(create_runtime_client(settings))
+    mcp.run(transport="stdio")
 
 
 def fake_demo_app() -> Starlette:
