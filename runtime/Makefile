@@ -12,4 +12,4 @@ report-demo:
 	$(PYTHON) -m lumabot_runtime.reports.demo
 
 test:
-	uv run pytest tests/zero_provider tests/pdl tests/enrichment tests/scoring tests/reports
+	uv run pytest

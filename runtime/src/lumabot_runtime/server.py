@@ -515,13 +515,22 @@ async def _scrape_luma_page_html(event_url: str, *, email: Any = None) -> str:
         page.set_default_timeout(TIMEOUT_MS)
         await page.goto(event_url, wait_until="domcontentloaded")
         await page.wait_for_timeout(2000)
-        for selector in ["button:has-text('Guests')", "a:has-text('Guests')", "[href*='guests']"]:
+        for selector in [
+            "button:has-text('Guests')",
+            "a:has-text('Guests')",
+            "button:has-text('others')",
+            "button:has-text('Going')",
+            "[href*='guests']",
+        ]:
             try:
                 await page.locator(selector).first.click(timeout=1500)
                 await page.wait_for_timeout(1500)
                 break
             except Exception:
                 continue
+        for _ in range(5):
+            await page.mouse.wheel(0, 1200)
+            await page.wait_for_timeout(300)
         return await page.content()
     finally:
         await context.close()

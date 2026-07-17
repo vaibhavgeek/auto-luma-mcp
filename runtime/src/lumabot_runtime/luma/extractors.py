@@ -115,7 +115,8 @@ def extract_visible_guests(html: str) -> list[tuple[LumaPerson, dict[str, Any]]]
         return []
 
     guests: list[tuple[LumaPerson, dict[str, Any]]] = []
-    for card in soup.select(SELECTORS["guest"]):
+    guest_cards = soup.select(SELECTORS["guest"])
+    for card in guest_cards:
         full_name = _text(card.select_one(SELECTORS["guest_name"]))
         if not full_name:
             continue
@@ -145,4 +146,65 @@ def extract_visible_guests(html: str) -> list[tuple[LumaPerson, dict[str, Any]]]
                 },
             )
         )
+    if guests:
+        return guests
+
+    for person in _extract_luma_profile_link_guests(soup):
+        guests.append(
+            (
+                person,
+                {
+                    "attendee_status": "visible",
+                    "organizer_status": "attendee",
+                    "source_selector": "heading:contains('Guests') a[href^='/user/']",
+                },
+            )
+        )
     return guests
+
+
+def _extract_luma_profile_link_guests(soup: BeautifulSoup) -> list[LumaPerson]:
+    guest_heading = next(
+        (
+            heading
+            for heading in soup.select("h1, h2, h3, [role='heading']")
+            if "guest" in heading.get_text(" ", strip=True).lower()
+        ),
+        None,
+    )
+    if guest_heading is None:
+        return []
+
+    people: list[LumaPerson] = []
+    seen_profiles: set[str] = set()
+    for link in guest_heading.find_all_next("a", href=True):
+        href = str(link.get("href", ""))
+        if not (href.startswith("/user/") or "://lu.ma/user/" in href or "://luma.com/user/" in href):
+            continue
+        profile_url = canonicalize_luma_url(href, "https://lu.ma")
+        if profile_url in seen_profiles:
+            continue
+        full_name = _profile_link_name(link)
+        if not full_name:
+            continue
+        seen_profiles.add(profile_url)
+        image_node = link.select_one("img")
+        people.append(
+            LumaPerson(
+                person_id=person_id_for_visible_identity(full_name, profile_url),
+                full_name=full_name,
+                profile_url=profile_url,
+                image_url=_attr(image_node, "src"),
+                social_links=[],
+                identity_confidence=0.75,
+            )
+        )
+    return people
+
+
+def _profile_link_name(link: Tag) -> str | None:
+    image_node = link.select_one("img")
+    image_alt = _attr(image_node, "alt")
+    if image_alt and image_alt.startswith("Profile picture for "):
+        return image_alt.removeprefix("Profile picture for ").strip() or None
+    return _text(link)
