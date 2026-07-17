@@ -11,6 +11,12 @@ from typing import Any
 from uuid import uuid4
 
 import httpx
+from lumabot_runtime.enrichment.models import UserProfile
+from lumabot_runtime.luma.enrichment import (
+    VisibleGuestProvider,
+    generate_report_from_luma_guest_html,
+)
+from lumabot_runtime.zero_provider import ZeroCapabilityClient
 from playwright.async_api import Browser, Page, async_playwright
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -43,6 +49,7 @@ class RuntimeState:
     browser: Browser | None = None
     attempts: dict[str, LoginAttempt] = field(default_factory=dict)
     profile: dict[str, Any] | None = None
+    reports: dict[str, dict[str, Any]] = field(default_factory=dict)
     report_jobs: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     async def ensure_browser(self) -> Browser:
@@ -380,19 +387,59 @@ async def handle_get_event_report(request: Request) -> JSONResponse:
     event_id = request.path_params["event_id"]
     refresh = request.query_params.get("refresh", "false") == "true"
     if refresh:
-        job_id = f"job-report-{event_id}"
-        state.report_jobs[job_id] = {
-            "job_id": job_id, "status": "completed", "progress": 1.0,
-            "result": {"event_id": event_id, "summary": "Report generated.", "top_attendee_match": "Maya Chen"},
-            "error": None,
+        return await handle_create_report_job(request)
+    report = state.reports.get(event_id)
+    if report is not None:
+        return JSONResponse({"report": report})
+    return JSONResponse(
+        {
+            "report": {
+                "event_id": event_id,
+                "summary": "Cached report.",
+                "top_attendee_match": "Maya Chen",
+            }
         }
-        return JSONResponse({"job_id": job_id, "status": "queued"})
-    return JSONResponse({"report": {"event_id": event_id, "summary": "Cached report.", "top_attendee_match": "Maya Chen"}})
+    )
 
 
 async def handle_create_report_job(request: Request) -> JSONResponse:
     event_id = request.path_params["event_id"]
     job_id = f"job-report-{event_id}"
+    body = await _request_json(request)
+    event_url = body.get("event_url") or f"https://lu.ma/{event_id}"
+    event_html = body.get("event_html")
+    guest_html = body.get("guest_html")
+
+    if event_html is None and guest_html is None and body.get("scrape") is True:
+        scraped_html = await _scrape_luma_page_html(str(event_url), email=body.get("email"))
+        event_html = scraped_html
+        guest_html = scraped_html
+
+    if isinstance(event_html, str) and isinstance(guest_html, str):
+        result = await generate_report_from_luma_guest_html(
+            user_profile=_user_profile_from_body(body),
+            event_url=str(event_url),
+            event_html=event_html,
+            guest_html=guest_html,
+            provider=_enrichment_provider(),
+        )
+        report = result.report.model_dump(mode="json")
+        state.reports[event_id] = report
+        state.report_jobs[job_id] = {
+            "job_id": job_id,
+            "status": "completed",
+            "progress": 1.0,
+            "result": {
+                "event_id": event_id,
+                "report": report,
+                "visible_guest_count": result.visible_guest_count,
+                "enriched_guest_count": result.enriched_guest_count,
+                "warnings": result.warnings,
+            },
+            "error": None,
+        }
+        return JSONResponse({"job_id": job_id, "status": "queued"})
+
     state.report_jobs[job_id] = {
         "job_id": job_id, "status": "completed", "progress": 1.0,
         "result": {"event_id": event_id, "summary": "Report generated."},
@@ -411,6 +458,73 @@ async def handle_confirm_action(request: Request) -> JSONResponse:
     action_id = request.path_params["action_id"]
     body = await request.json()
     return JSONResponse({"action_id": action_id, "status": "confirmed", "confirmation_token_used": bool(body.get("confirmation_token"))})
+
+
+async def _request_json(request: Request) -> dict[str, Any]:
+    try:
+        body = await request.json()
+    except Exception:
+        return {}
+    return body if isinstance(body, dict) else {}
+
+
+def _user_profile_from_body(body: dict[str, Any]) -> UserProfile:
+    candidate = body.get("user_profile")
+    if isinstance(candidate, dict):
+        return UserProfile.model_validate(candidate)
+    profile_text = body.get("profile_text")
+    if not isinstance(profile_text, str) and state.profile is not None:
+        profile_text = str(state.profile.get("profile_text", ""))
+    words = [
+        word.strip("., ").lower()
+        for word in str(profile_text or "").split()
+        if len(word.strip("., ")) > 4
+    ]
+    return UserProfile(
+        goals=[str(profile_text)] if profile_text else [],
+        target_roles=["founder", "engineering leader", "hiring manager"],
+        industries=["ai", "developer tools"],
+        company_stages=["seed"],
+        company_sizes=["fewer than 50 employees"],
+        event_types=["hackathon", "meetup"],
+        region=state.profile.get("location") if state.profile else None,
+        keywords=sorted(set(words[:10])),
+    )
+
+
+def _enrichment_provider() -> Any:
+    if os.getenv("LUMABOT_ENRICHMENT_PROVIDER", "visible").lower() == "zero":
+        return ZeroCapabilityClient(
+            zero_bin=os.getenv("ZERO_BIN", "zero"),
+            max_pay_usdc=os.getenv("ZERO_MAX_PAY_USDC", "0.25"),
+            timeout_seconds=int(os.getenv("ZERO_TIMEOUT_SECONDS", "60")),
+        )
+    return VisibleGuestProvider()
+
+
+async def _scrape_luma_page_html(event_url: str, *, email: Any = None) -> str:
+    browser = await state.ensure_browser()
+    context = await browser.new_context()
+    try:
+        if isinstance(email, str):
+            session_data = await load_session_from_db(email)
+            cookies = session_data.get("cookies", []) if session_data else []
+            if cookies:
+                await context.add_cookies(cookies)
+        page = await context.new_page()
+        page.set_default_timeout(TIMEOUT_MS)
+        await page.goto(event_url, wait_until="domcontentloaded")
+        await page.wait_for_timeout(2000)
+        for selector in ["button:has-text('Guests')", "a:has-text('Guests')", "[href*='guests']"]:
+            try:
+                await page.locator(selector).first.click(timeout=1500)
+                await page.wait_for_timeout(1500)
+                break
+            except Exception:
+                continue
+        return await page.content()
+    finally:
+        await context.close()
 
 
 async def health(request: Request) -> JSONResponse:

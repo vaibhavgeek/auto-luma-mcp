@@ -38,6 +38,10 @@ class LumaPerson:
     image_url: str | None
     social_links: list[str]
     identity_confidence: float
+    title: str | None = None
+    company: str | None = None
+    location: str | None = None
+    bio: str | None = None
 
 
 @dataclass(frozen=True)
@@ -46,4 +50,3 @@ class EventSyncResult:
     title: str
     registration_state: str | None
     synchronized_at: datetime
-

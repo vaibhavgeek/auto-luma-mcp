@@ -170,10 +170,57 @@ def create_mcp_server(runtime: RuntimeClient | None = None) -> FastMCP:
             bool,
             Field(description="Queue a fresh runtime report instead of using existing report."),
         ] = False,
+        event_url: Annotated[
+            str | None,
+            Field(description="Luma event URL to scrape when refreshing the report."),
+        ] = None,
+        event_html: Annotated[
+            str | None,
+            Field(description="Rendered Luma event HTML for deterministic report refresh."),
+        ] = None,
+        guest_html: Annotated[
+            str | None,
+            Field(description="Rendered Luma guest-list HTML for deterministic report refresh."),
+        ] = None,
+        profile_text: Annotated[
+            str | None,
+            Field(description="Optional user profile text for attendee scoring."),
+        ] = None,
+        scrape: Annotated[
+            bool,
+            Field(description="Scrape event_url with the runtime browser before refreshing."),
+        ] = False,
+        email: Annotated[
+            str | None,
+            Field(description="Luma account email whose saved session should be used for scraping."),
+        ] = None,
     ) -> ToolResponse:
         """Return an existing event report or a queued report job identifier."""
-        log_tool_call(logger, "get_event_report", {"event_id": event_id, "refresh": refresh})
-        return await handle_get_event_report(runtime_client, event_id=event_id, refresh=refresh)
+        log_tool_call(
+            logger,
+            "get_event_report",
+            {
+                "event_id": event_id,
+                "refresh": refresh,
+                "event_url": event_url,
+                "event_html": bool(event_html),
+                "guest_html": bool(guest_html),
+                "profile_text": profile_text,
+                "scrape": scrape,
+                "email": email,
+            },
+        )
+        return await handle_get_event_report(
+            runtime_client,
+            event_id=event_id,
+            refresh=refresh,
+            event_url=event_url,
+            event_html=event_html,
+            guest_html=guest_html,
+            profile_text=profile_text,
+            scrape=scrape,
+            email=email,
+        )
 
     @mcp.tool()
     async def get_job_status(

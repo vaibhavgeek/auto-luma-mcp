@@ -53,6 +53,12 @@ class RuntimeClient(Protocol):
         *,
         refresh: bool,
         correlation_id: str,
+        event_url: str | None = None,
+        event_html: str | None = None,
+        guest_html: str | None = None,
+        profile_text: str | None = None,
+        scrape: bool = False,
+        email: str | None = None,
     ) -> JSONDict: ...
 
     async def create_event_report_job(
@@ -60,6 +66,12 @@ class RuntimeClient(Protocol):
         event_id: str,
         *,
         correlation_id: str,
+        event_url: str | None = None,
+        event_html: str | None = None,
+        guest_html: str | None = None,
+        profile_text: str | None = None,
+        scrape: bool = False,
+        email: str | None = None,
     ) -> JSONDict: ...
 
     async def get_job(self, job_id: str, *, correlation_id: str) -> JSONDict: ...
@@ -168,19 +180,54 @@ class HttpRuntimeClient:
         *,
         refresh: bool,
         correlation_id: str,
+        event_url: str | None = None,
+        event_html: str | None = None,
+        guest_html: str | None = None,
+        profile_text: str | None = None,
+        scrape: bool = False,
+        email: str | None = None,
     ) -> JSONDict:
+        if refresh:
+            return await self.create_event_report_job(
+                event_id,
+                event_url=event_url,
+                event_html=event_html,
+                guest_html=guest_html,
+                profile_text=profile_text,
+                scrape=scrape,
+                email=email,
+                correlation_id=correlation_id,
+            )
         return await self._request(
             "GET",
             f"/events/{event_id}/report",
-            params={"refresh": str(refresh).lower()},
+            params={"refresh": "false"},
             correlation_id=correlation_id,
         )
 
-    async def create_event_report_job(self, event_id: str, *, correlation_id: str) -> JSONDict:
+    async def create_event_report_job(
+        self,
+        event_id: str,
+        *,
+        correlation_id: str,
+        event_url: str | None = None,
+        event_html: str | None = None,
+        guest_html: str | None = None,
+        profile_text: str | None = None,
+        scrape: bool = False,
+        email: str | None = None,
+    ) -> JSONDict:
         return await self._request(
             "POST",
             f"/events/{event_id}/report/jobs",
-            json={},
+            json={
+                "event_url": event_url,
+                "event_html": event_html,
+                "guest_html": guest_html,
+                "profile_text": profile_text,
+                "scrape": scrape,
+                "email": email,
+            },
             correlation_id=correlation_id,
         )
 
@@ -373,11 +420,26 @@ class FakeRuntimeClient:
         *,
         refresh: bool,
         correlation_id: str,
+        event_url: str | None = None,
+        event_html: str | None = None,
+        guest_html: str | None = None,
+        profile_text: str | None = None,
+        scrape: bool = False,
+        email: str | None = None,
     ) -> JSONDict:
         await self._maybe_delay()
         self._maybe_fail_auth()
         if refresh:
-            return await self.create_event_report_job(event_id, correlation_id=correlation_id)
+            return await self.create_event_report_job(
+                event_id,
+                event_url=event_url,
+                event_html=event_html,
+                guest_html=guest_html,
+                profile_text=profile_text,
+                scrape=scrape,
+                email=email,
+                correlation_id=correlation_id,
+            )
         if event_id == "evt-luma-ai-builders":
             return {
                 "report": {
@@ -390,9 +452,21 @@ class FakeRuntimeClient:
             }
         return await self.create_event_report_job(event_id, correlation_id=correlation_id)
 
-    async def create_event_report_job(self, event_id: str, *, correlation_id: str) -> JSONDict:
+    async def create_event_report_job(
+        self,
+        event_id: str,
+        *,
+        correlation_id: str,
+        event_url: str | None = None,
+        event_html: str | None = None,
+        guest_html: str | None = None,
+        profile_text: str | None = None,
+        scrape: bool = False,
+        email: str | None = None,
+    ) -> JSONDict:
         await self._maybe_delay()
         self._maybe_fail_auth()
+        del event_url, event_html, guest_html, profile_text, scrape, email
         job_id = f"job-report-{event_id}"
         self.report_jobs[job_id] = {
             "job_id": job_id,

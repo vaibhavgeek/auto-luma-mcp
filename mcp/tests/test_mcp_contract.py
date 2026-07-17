@@ -45,6 +45,16 @@ async def test_tool_list_contract(client_session: ClientSession) -> None:
         "limit",
         "location_override",
     }
+    assert set(tools["get_event_report"].inputSchema["properties"]) == {
+        "event_id",
+        "refresh",
+        "event_url",
+        "event_html",
+        "guest_html",
+        "profile_text",
+        "scrape",
+        "email",
+    }
 
 
 @pytest.mark.anyio

@@ -27,6 +27,10 @@ SELECTORS = {
     "guest_profile": "a[data-luma-profile], a.profile-link",
     "guest_social": "a[data-social], a[href*='twitter.com'], a[href*='linkedin.com'], a[href*='github.com']",
     "guest_image": "img[data-luma-guest-image], img.avatar",
+    "guest_title": "[data-luma-guest-title], .guest-title",
+    "guest_company": "[data-luma-guest-company], .guest-company",
+    "guest_location": "[data-luma-guest-location], .guest-location",
+    "guest_bio": "[data-luma-guest-bio], .guest-bio",
 }
 
 
@@ -126,6 +130,10 @@ def extract_visible_guests(html: str) -> list[tuple[LumaPerson, dict[str, Any]]]
             image_url=image_url,
             social_links=sorted(set(social_links)),
             identity_confidence=0.75 if profile_url else 0.55,
+            title=_text(card.select_one(SELECTORS["guest_title"])),
+            company=_text(card.select_one(SELECTORS["guest_company"])),
+            location=_text(card.select_one(SELECTORS["guest_location"])),
+            bio=_text(card.select_one(SELECTORS["guest_bio"])),
         )
         guests.append(
             (
@@ -138,4 +146,3 @@ def extract_visible_guests(html: str) -> list[tuple[LumaPerson, dict[str, Any]]]
             )
         )
     return guests
-
