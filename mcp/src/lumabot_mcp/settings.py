@@ -8,7 +8,7 @@ from dataclasses import dataclass
 class Settings:
     runtime_url: str = "http://127.0.0.1:8080"
     runtime_bearer_token: str | None = None
-    request_timeout_seconds: float = 5.0
+    request_timeout_seconds: float = 30.0
     host: str = "127.0.0.1"
     port: int = 8000
     log_level: str = "INFO"

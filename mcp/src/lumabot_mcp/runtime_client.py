@@ -22,6 +22,8 @@ class RuntimeClient(Protocol):
         correlation_id: str,
     ) -> JSONDict: ...
 
+    async def check_login(self, email: str, *, correlation_id: str) -> JSONDict: ...
+
     async def set_profile(self, profile_text: str, *, correlation_id: str) -> JSONDict: ...
 
     async def recommend_events(
@@ -102,6 +104,14 @@ class HttpRuntimeClient:
             "POST",
             "/login/verify",
             json={"attempt_id": attempt_id, "code": code},
+            correlation_id=correlation_id,
+        )
+
+    async def check_login(self, email: str, *, correlation_id: str) -> JSONDict:
+        return await self._request(
+            "POST",
+            "/login/check",
+            json={"email": email},
             correlation_id=correlation_id,
         )
 
@@ -286,6 +296,16 @@ class FakeRuntimeClient:
             "user_id": "user-demo",
             "email": self.login_attempts[attempt_id],
             "session_expires_in_seconds": 3600,
+        }
+
+    async def check_login(self, email: str, *, correlation_id: str) -> JSONDict:
+        await self._maybe_delay()
+        self._maybe_fail_auth()
+        return {
+            "authenticated": True,
+            "session_exists": True,
+            "current_url": "https://lu.ma/home",
+            "message": "Session is valid.",
         }
 
     async def set_profile(self, profile_text: str, *, correlation_id: str) -> JSONDict:
