@@ -1,7 +1,15 @@
-.PHONY: demo test
+.PHONY: demo luma-demo report-demo test
+PYTHON ?= uv run python
 
 demo:
-	uv run python -m lumabot_runtime.reports.demo
+	$(MAKE) luma-demo
+	$(MAKE) report-demo
+
+luma-demo:
+	$(PYTHON) -m lumabot_runtime.luma.demo
+
+report-demo:
+	$(PYTHON) -m lumabot_runtime.reports.demo
 
 test:
-	uv run pytest tests/zero_provider tests/pdl tests/enrichment tests/scoring tests/reports
+	uv run pytest

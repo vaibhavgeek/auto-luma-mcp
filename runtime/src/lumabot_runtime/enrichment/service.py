@@ -4,7 +4,14 @@ import asyncio
 from dataclasses import dataclass
 from typing import Protocol
 
-from lumabot_runtime.enrichment.models import EnrichedCompany, EnrichedPerson, EvidenceField, RawCompany, RawPerson
+from lumabot_runtime.enrichment.models import (
+    EnrichedCompany,
+    EnrichedPerson,
+    EnrichmentStatus,
+    EvidenceField,
+    RawCompany,
+    RawPerson,
+)
 
 
 class EnrichmentProvider(Protocol):
@@ -92,4 +99,5 @@ def _fallback_person(person: RawPerson) -> EnrichedPerson:
             source_url=None,
             confidence=0.6,
         ),
+        enrichment_status=EnrichmentStatus.ENRICHMENT_FAILED,
     )

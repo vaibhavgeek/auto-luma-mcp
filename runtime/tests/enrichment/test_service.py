@@ -6,6 +6,7 @@ from lumabot_runtime.enrichment import EnrichmentService
 from lumabot_runtime.enrichment.models import (
     EnrichedCompany,
     EnrichedPerson,
+    EnrichmentStatus,
     EvidenceField,
     RawCompany,
     RawPerson,
@@ -95,4 +96,5 @@ async def test_enrichment_service_falls_back_when_zero_provider_fails() -> None:
 
     assert bundle.person.full_name.value == "Maya Chen"
     assert bundle.person.full_name.source == "luma-visible-attendee"
+    assert bundle.person.enrichment_status == EnrichmentStatus.ENRICHMENT_FAILED
     assert bundle.warnings == ["zero unavailable"]

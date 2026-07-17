@@ -1,11 +1,20 @@
 [project]
 name = "lumabot-runtime"
 version = "0.1.0"
-description = "Independently testable LumaBot provider enrichment, scoring, and reporting workstream."
+description = "Independently testable LumaBot browser, enrichment, scoring, and reporting runtime."
 requires-python = ">=3.12"
 dependencies = [
+    "beautifulsoup4>=4.12",
+    "cryptography>=42",
+    "httpx>=0.27",
+    "playwright>=1.45",
     "pydantic>=2.11.0",
+    "starlette>=0.37",
+    "uvicorn>=0.30",
 ]
+
+[project.scripts]
+lumabot-runtime = "lumabot_runtime.server:main"
 
 [dependency-groups]
 dev = [
@@ -23,3 +32,6 @@ packages = ["src/lumabot_runtime"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "live_luma: opt-in smoke test against live Luma login flow",
+]
