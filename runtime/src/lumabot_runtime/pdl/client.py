@@ -1,104 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Protocol
-
-import httpx
+from typing import Any
 
 from lumabot_runtime.enrichment.models import (
     EnrichedCompany,
     EnrichedPerson,
     EvidenceField,
-    RawCompany,
-    RawPerson,
 )
-
-PDL_BASE_URL = "https://api.peopledatalabs.com"
-PDL_PERSON_ENRICH_PATH = "/v5/person/enrich"
-PDL_COMPANY_ENRICH_PATH = "/v5/company/enrich"
-
-
-class EnrichmentClient(Protocol):
-    async def enrich_person(self, person: RawPerson) -> EnrichedPerson: ...
-
-    async def enrich_company(self, company: RawCompany) -> EnrichedCompany: ...
-
-    async def health_check(self) -> bool: ...
-
-
-@dataclass
-class PeopleDataLabsClient:
-    api_key: str
-    base_url: str = PDL_BASE_URL
-    timeout_seconds: float = 10.0
-    min_likelihood: int = 5
-
-    async def enrich_person(self, person: RawPerson) -> EnrichedPerson:
-        payload = await self._get(PDL_PERSON_ENRICH_PATH, self._person_params(person))
-        return person_from_pdl(person.person_id, payload)
-
-    async def enrich_company(self, company: RawCompany) -> EnrichedCompany:
-        payload = await self._get(PDL_COMPANY_ENRICH_PATH, self._company_params(company))
-        return company_from_pdl(company.company_id, payload)
-
-    async def health_check(self) -> bool:
-        try:
-            await self._get(PDL_COMPANY_ENRICH_PATH, {"name": "People Data Labs"})
-        except httpx.HTTPStatusError as exc:
-            return exc.response.status_code == 404
-        except httpx.HTTPError:
-            return False
-        return True
-
-    async def _get(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.get(
-                f"{self.base_url.rstrip('/')}{path}",
-                headers={"X-Api-Key": self.api_key},
-                params={key: value for key, value in params.items() if value not in (None, "", [])},
-            )
-            if response.status_code == 404:
-                raise LookupError("People Data Labs did not find a matching record")
-            response.raise_for_status()
-            data = response.json()
-        if not isinstance(data, dict):
-            raise ValueError("malformed People Data Labs response")
-        return data
-
-    def _person_params(self, person: RawPerson) -> dict[str, Any]:
-        return {
-            "name": person.full_name,
-            "profile": person.social_urls[0] if person.social_urls else None,
-            "company": person.company,
-            "title": person.title,
-            "location": person.location,
-            "min_likelihood": self.min_likelihood,
-        }
-
-    def _company_params(self, company: RawCompany) -> dict[str, Any]:
-        return {
-            "name": company.name,
-            "website": company.website,
-            "min_likelihood": self.min_likelihood,
-        }
-
-
-@dataclass
-class FakePeopleDataLabsClient:
-    people: dict[str, EnrichedPerson] = field(default_factory=dict)
-    companies: dict[str, EnrichedCompany] = field(default_factory=dict)
-    fail_health: bool = False
-
-    async def enrich_person(self, person: RawPerson) -> EnrichedPerson:
-        self.people.setdefault(person.person_id, _enrich_raw_person(person))
-        return self.people[person.person_id]
-
-    async def enrich_company(self, company: RawCompany) -> EnrichedCompany:
-        self.companies.setdefault(company.company_id, _enrich_raw_company(company))
-        return self.companies[company.company_id]
-
-    async def health_check(self) -> bool:
-        return not self.fail_health
 
 
 def person_from_pdl(person_id: str, payload: dict[str, Any]) -> EnrichedPerson:
@@ -157,15 +65,6 @@ def company_from_pdl(company_id: str, payload: dict[str, Any]) -> EnrichedCompan
     )
 
 
-def _field(value: object, confidence: float = 0.7) -> EvidenceField:
-    return EvidenceField(
-        value=value,
-        source="fake-people-data-labs",
-        source_url="https://docs.peopledatalabs.com/",
-        confidence=confidence,
-    )
-
-
 def _pdl_field(value: object, field_name: str, confidence: float) -> EvidenceField:
     return EvidenceField(
         value=value,
@@ -179,25 +78,6 @@ def _optional_pdl_field(value: object | None, field_name: str, confidence: float
     if value in (None, "", []):
         return None
     return _pdl_field(value, field_name, confidence)
-
-
-def _enrich_raw_person(person: RawPerson) -> EnrichedPerson:
-    return EnrichedPerson(
-        person_id=person.person_id,
-        full_name=_field(person.full_name, 0.95),
-        title=_field(person.title, 0.7) if person.title else None,
-        company_name=_field(person.company, 0.7) if person.company else None,
-        location=_field(person.location, 0.65) if person.location else None,
-        social_urls=[_field(url.strip().lower(), 0.9) for url in person.social_urls],
-    )
-
-
-def _enrich_raw_company(company: RawCompany) -> EnrichedCompany:
-    return EnrichedCompany(
-        company_id=company.company_id,
-        name=_field(company.name, 0.95),
-        website=_field(company.website, 0.8) if company.website else None,
-    )
 
 
 def _current_experience(payload: dict[str, Any]) -> dict[str, Any]:

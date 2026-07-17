@@ -65,7 +65,6 @@ class EnrichedPerson(BaseModel):
     social_urls: list[EvidenceField] = Field(default_factory=list)
     profile_image_url: EvidenceField | None = None
     interests: list[EvidenceField] = Field(default_factory=list)
-    professional_email: EvidenceField | None = None
     email_verification: EvidenceField | None = None
     sources_agreeing: int = 1
     enrichment_status: EnrichmentStatus = EnrichmentStatus.ENRICHED

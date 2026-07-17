@@ -1,8 +1,8 @@
 # Zero-Proxied Enrichment Provider Testing
 
-Default tests use fake provider clients, mocked HTTP responses through `respx`,
-and fake Zero runners. They must not contact Zero, People Data Labs, Hunter, or
-Clearbit, and they must not spend USDC.
+Default tests use fake provider clients and fake Zero runners. They must not
+contact Zero, People Data Labs, configured email verifier capabilities, or any
+other paid provider, and they must not spend USDC.
 
 Manual live smoke test plan:
 

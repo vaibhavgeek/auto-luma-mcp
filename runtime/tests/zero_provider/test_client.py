@@ -73,7 +73,7 @@ async def test_zero_pdl_company_maps_provider_body() -> None:
 
 
 @pytest.mark.asyncio
-async def test_zero_hunter_email_verifier_maps_nested_response() -> None:
+async def test_zero_email_verifier_maps_nested_response() -> None:
     async def runner(args: list[str], stdin: str | None) -> dict:
         assert args[3] == "hunter-email-verifier-1d1a2575"
         assert json.loads(stdin or "{}") == {"email": "maya@vectorforge.ai"}
@@ -110,4 +110,3 @@ async def test_zero_failure_raises_safe_error() -> None:
     client = ZeroCapabilityClient(runner=runner)
     with pytest.raises(RuntimeError, match="Zero capability call failed"):
         await client.enrich_person(RawPerson(person_id="p1", full_name="Maya Chen"))
-

@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Independently testable LumaBot provider enrichment, scoring, and reporting workstream."
 requires-python = ">=3.12"
 dependencies = [
-    "httpx>=0.28.0",
     "pydantic>=2.11.0",
 ]
 
@@ -12,7 +11,6 @@ dependencies = [
 dev = [
     "pytest>=8.4.0",
     "pytest-asyncio>=1.0.0",
-    "respx>=0.21.0",
 ]
 
 [build-system]

@@ -15,39 +15,17 @@ Runtime path:
 EnrichmentService
  -> ZeroCapabilityClient
  -> zero fetch --capability ... --json
- -> PDL/Hunter capability provider
+ -> Zero provider capability
  -> normalized EvidenceField models
 ```
 
-The direct provider-specific code in this workstream is retained for response
-normalization, fakes, and tests. Production configuration should prefer
-`ZeroCapabilityClient` so Zero handles capability discovery, payment, and provider
-access.
+Runtime code does not call People Data Labs, Hunter, or Clearbit APIs directly.
+It only invokes Zero capabilities, then normalizes the provider-shaped response
+payloads into the shared evidence models.
 
-People Data Labs endpoints:
+People Data Labs response mapping:
 
-- `GET https://api.peopledatalabs.com/v5/person/enrich`
-- `GET https://api.peopledatalabs.com/v5/company/enrich`
-
-People Data Labs authentication:
-
-- `X-Api-Key: $PEOPLE_DATA_LABS_API_KEY`
-
-Hunter endpoints:
-
-- `GET https://api.hunter.io/v2/email-finder`
-- `GET https://api.hunter.io/v2/email-verifier`
-- `GET https://api.hunter.io/v2/domain-search`
-
-Hunter authentication:
-
-- `api_key=$HUNTER_API_KEY`
-
-Clearbit Autocomplete endpoint:
-
-- `GET https://autocomplete.clearbit.com/v1/companies/suggest?query=...`
-
-The runtime maps PDL responses into evidence-bearing fields:
+The runtime maps PDL person/company payloads into evidence-bearing fields:
 
 - `value`
 - `source`
@@ -55,10 +33,10 @@ The runtime maps PDL responses into evidence-bearing fields:
 - `retrieved_at`
 - `confidence`
 
-Default tests and demos use fakes/mocked runners; they never call live providers
+Default tests and demos use fakes and mocked runners; they never call live providers
 or spend through Zero. Live provider usage should be opt-in and should never log
-Zero wallet details, access keys, or raw paid provider response bodies. Hunter
-data should be treated as user-facing contact intelligence only after explicit
+Zero wallet details, access keys, or raw paid provider response bodies. Email
+verification data should be treated as contact intelligence only after explicit
 product review; it should not be used for unsolicited attendee outreach.
 
 Useful request inputs from Luma:

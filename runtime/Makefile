@@ -4,4 +4,4 @@ demo:
 	uv run python -m lumabot_runtime.reports.demo
 
 test:
-	uv run pytest tests/zero_provider tests/pdl tests/hunter tests/clearbit tests/enrichment tests/scoring tests/reports
+	uv run pytest tests/zero_provider tests/pdl tests/enrichment tests/scoring tests/reports

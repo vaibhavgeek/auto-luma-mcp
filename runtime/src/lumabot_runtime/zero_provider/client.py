@@ -11,7 +11,7 @@ from lumabot_runtime.pdl.client import company_from_pdl, person_from_pdl
 
 DEFAULT_PDL_PERSON_CAPABILITY = "pdl-person-enrich-e8ccbe47"
 DEFAULT_PDL_COMPANY_CAPABILITY = "pdl-company-enrich-0f2efa9c"
-DEFAULT_HUNTER_VERIFY_CAPABILITY = "hunter-email-verifier-1d1a2575"
+DEFAULT_EMAIL_VERIFY_CAPABILITY = "hunter-email-verifier-1d1a2575"
 
 ZeroRunner = Callable[[list[str], str | None], Awaitable[dict[str, Any]]]
 
@@ -24,7 +24,7 @@ class ZeroCapabilityClient:
     timeout_seconds: int = 60
     pdl_person_capability: str = DEFAULT_PDL_PERSON_CAPABILITY
     pdl_company_capability: str = DEFAULT_PDL_COMPANY_CAPABILITY
-    hunter_verify_capability: str = DEFAULT_HUNTER_VERIFY_CAPABILITY
+    email_verify_capability: str = DEFAULT_EMAIL_VERIFY_CAPABILITY
 
     async def enrich_person(self, person: RawPerson) -> EnrichedPerson:
         payload = _zero_http_payload(_person_body(person))
@@ -36,12 +36,8 @@ class ZeroCapabilityClient:
         result = await self._fetch(self.pdl_company_capability, payload)
         return company_from_pdl(company.company_id, _provider_body(result))
 
-    async def find_email(self, person: RawPerson) -> EvidenceField | None:
-        del person
-        return None
-
     async def verify_email(self, email: str) -> EvidenceField | None:
-        result = await self._fetch(self.hunter_verify_capability, {"email": email})
+        result = await self._fetch(self.email_verify_capability, {"email": email})
         body = _provider_body(result)
         data = _nested_data(body)
         status = data.get("status") or data.get("result")
@@ -55,10 +51,6 @@ class ZeroCapabilityClient:
             source_url="https://info.zero.xyz/",
             confidence=max(0.0, min(1.0, confidence)),
         )
-
-    async def domain_search(self, domain: str) -> list[EvidenceField]:
-        del domain
-        return []
 
     async def health_check(self) -> bool:
         try:
@@ -166,4 +158,3 @@ def _nested_data(payload: dict[str, Any]) -> dict[str, Any]:
         else:
             break
     return current if isinstance(current, dict) else {}
-
