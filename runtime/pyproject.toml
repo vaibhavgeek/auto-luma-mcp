@@ -1,0 +1,31 @@
+[project]
+name = "lumabot-runtime"
+version = "0.1.0"
+description = "Independently testable Luma browser automation workstream."
+requires-python = ">=3.11"
+dependencies = [
+  "beautifulsoup4>=4.12",
+  "cryptography>=42",
+  "playwright>=1.45",
+  "pydantic>=2",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lumabot_runtime"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+  "live_luma: opt-in smoke test against live Luma login flow",
+]
