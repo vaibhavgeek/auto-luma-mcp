@@ -498,6 +498,7 @@ def _enrichment_provider() -> Any:
             zero_bin=os.getenv("ZERO_BIN", "zero"),
             max_pay_usdc=os.getenv("ZERO_MAX_PAY_USDC", "0.25"),
             timeout_seconds=int(os.getenv("ZERO_TIMEOUT_SECONDS", "60")),
+            pdl_min_likelihood=int(os.getenv("PDL_MIN_LIKELIHOOD", "1")),
         )
     return VisibleGuestProvider()
 

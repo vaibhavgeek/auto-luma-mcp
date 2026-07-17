@@ -40,9 +40,9 @@ async def test_zero_pdl_person_uses_capability_fetch_payload() -> None:
     assert "--max-pay" in args
     assert "0.03" in args
     payload = json.loads(stdin or "{}")
-    assert payload["input"]["type"] == "http"
-    assert payload["input"]["method"] == "POST"
-    assert payload["input"]["body"]["profile"] == "https://linkedin.com/in/mayachen"
+    assert payload["profile"] == "https://linkedin.com/in/mayachen"
+    assert payload["company"] == "VectorForge"
+    assert payload["min_likelihood"] == 1
     assert person.full_name.value == "Maya Chen"
     assert person.full_name.source == "people-data-labs:person.full_name"
 
@@ -55,12 +55,13 @@ async def test_zero_pdl_company_maps_provider_body() -> None:
             "ok": True,
             "status": 200,
             "body": {
+                "status": 200,
+                "likelihood": 8,
                 "data": {
                     "display_name": "VectorForge",
                     "employee_count": 18,
                     "latest_funding_stage": "seed",
                 },
-                "success": True,
             },
         }
 
