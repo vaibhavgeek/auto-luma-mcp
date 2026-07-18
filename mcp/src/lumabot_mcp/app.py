@@ -36,8 +36,14 @@ def create_runtime_client(settings: Settings) -> RuntimeClient:
 
 
 def create_mcp_server(runtime: RuntimeClient | None = None) -> FastMCP:
-    runtime_client = runtime or create_runtime_client(Settings.from_env())
-    mcp = FastMCP("LumaBot", json_response=True, stateless_http=True)
+    settings = Settings.from_env()
+    runtime_client = runtime or create_runtime_client(settings)
+    mcp = FastMCP(
+        "LumaBot",
+        json_response=True,
+        stateless_http=True,
+        transport_security=settings.transport_security_settings(),
+    )
 
     @mcp.tool()
     async def login(
