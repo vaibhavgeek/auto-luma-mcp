@@ -143,6 +143,70 @@ async def load_session_from_db(email: str) -> dict[str, Any] | None:
 
 # ─── Login handlers ────────────────────────────────────────────────────────────
 
+def _redact_email(text: str, email: str) -> str:
+    return text.replace(email, "[email]")
+
+
+async def _collect_login_diagnostics(page: Page, *, email: str) -> dict[str, Any]:
+    body_text = ""
+    button_texts: list[str] = []
+    inputs: list[dict[str, Any]] = []
+
+    try:
+        body_text = await page.locator("body").inner_text(timeout=3000)
+    except Exception as exc:
+        body_text = f"<failed to read body text: {exc}>"
+
+    try:
+        button_texts = [
+            _redact_email(text.strip(), email)
+            for text in await page.locator("button").all_text_contents()
+            if text.strip()
+        ]
+    except Exception:
+        button_texts = []
+
+    try:
+        inputs = await page.locator("input").evaluate_all(
+            """nodes => nodes.map(input => ({
+                type: input.getAttribute("type"),
+                name: input.getAttribute("name"),
+                autocomplete: input.getAttribute("autocomplete"),
+                inputmode: input.getAttribute("inputmode"),
+                placeholder: input.getAttribute("placeholder"),
+                aria_label: input.getAttribute("aria-label"),
+                visible: !!(input.offsetWidth || input.offsetHeight || input.getClientRects().length),
+                has_value: !!input.value
+            }))"""
+        )
+    except Exception:
+        inputs = []
+
+    normalized_text = body_text.lower()
+    challenge_markers = [
+        marker
+        for marker in [
+            "verifying your browser",
+            "quick check of your browser",
+            "keep luma safe",
+            "captcha",
+            "cloudflare",
+            "turnstile",
+            "challenge",
+        ]
+        if marker in normalized_text
+    ]
+
+    return {
+        "url": page.url,
+        "title": await page.title(),
+        "button_texts": button_texts,
+        "inputs": inputs,
+        "challenge_markers": challenge_markers,
+        "visible_text_excerpt": _redact_email(body_text, email)[:1200],
+    }
+
+
 async def _do_browser_login(attempt_id: str, email: str) -> dict[str, Any]:
     """Navigate to lu.ma, enter email, submit, and wait for the code screen."""
     context = None
@@ -183,11 +247,13 @@ async def _do_browser_login(attempt_id: str, email: str) -> dict[str, Any]:
     except Exception as exc:
         current_url = None
         title = None
+        diagnostics: dict[str, Any] | None = None
         try:
             if context is not None and context.pages:
                 page = context.pages[-1]
                 current_url = page.url
                 title = await page.title()
+                diagnostics = await _collect_login_diagnostics(page, email=email)
         except Exception:
             pass
         if context is not None:
@@ -195,7 +261,12 @@ async def _do_browser_login(attempt_id: str, email: str) -> dict[str, Any]:
                 await context.close()
             except Exception:
                 pass
-        logger.error("Login submission failed for %s: %s", email, exc)
+        logger.error(
+            "Login submission failed for %s: %s diagnostics=%s",
+            email,
+            exc,
+            json.dumps(diagnostics, default=str),
+        )
         return {
             "ok": False,
             "attempt_id": attempt_id,
@@ -204,6 +275,7 @@ async def _do_browser_login(attempt_id: str, email: str) -> dict[str, Any]:
             "error": str(exc),
             "current_url": current_url,
             "page_title": title,
+            "diagnostics": diagnostics,
         }
 
 
