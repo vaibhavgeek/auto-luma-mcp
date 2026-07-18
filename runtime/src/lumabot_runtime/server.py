@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Any
@@ -142,8 +143,9 @@ async def load_session_from_db(email: str) -> dict[str, Any] | None:
 
 # ─── Login handlers ────────────────────────────────────────────────────────────
 
-async def _do_browser_login(attempt_id: str, email: str) -> None:
-    """Background: navigate to lu.ma, enter email, submit to trigger code."""
+async def _do_browser_login(attempt_id: str, email: str) -> dict[str, Any]:
+    """Navigate to lu.ma, enter email, submit, and wait for the code screen."""
+    context = None
     try:
         browser = await state.ensure_browser()
         context = await browser.new_context()
@@ -157,18 +159,52 @@ async def _do_browser_login(attempt_id: str, email: str) -> None:
         await email_input.wait_for(state="visible")
         await email_input.fill(email)
 
-        submit = page.get_by_role("button", name="Continue with Email")
+        submit = page.get_by_role("button", name=re.compile(r"continue.*email|continue", re.I))
         try:
             await submit.click(timeout=5000)
         except Exception:
             submit = page.locator("button[type='submit']").first
-            await submit.click()
+            try:
+                await submit.click(timeout=5000)
+            except Exception:
+                await page.keyboard.press("Enter")
 
-        await page.wait_for_timeout(3000)
-        logger.info("Login code triggered for %s (attempt=%s)", email, attempt_id)
+        await page.locator(CODE_SELECTOR).first.wait_for(state="visible", timeout=15_000)
+        logger.info("Login code screen reached for %s (attempt=%s)", email, attempt_id)
         state.attempts[attempt_id] = LoginAttempt(email=email, page=page)
+        return {
+            "ok": True,
+            "attempt_id": attempt_id,
+            "delivery": "email",
+            "expires_in_seconds": 600,
+            "submitted": True,
+            "current_url": page.url,
+        }
     except Exception as exc:
-        logger.error("Background login failed for %s: %s", email, exc)
+        current_url = None
+        title = None
+        try:
+            if context is not None and context.pages:
+                page = context.pages[-1]
+                current_url = page.url
+                title = await page.title()
+        except Exception:
+            pass
+        if context is not None:
+            try:
+                await context.close()
+            except Exception:
+                pass
+        logger.error("Login submission failed for %s: %s", email, exc)
+        return {
+            "ok": False,
+            "attempt_id": attempt_id,
+            "delivery": "email",
+            "submitted": False,
+            "error": str(exc),
+            "current_url": current_url,
+            "page_title": title,
+        }
 
 
 async def _do_verify_and_save(attempt_id: str, code: str) -> None:
@@ -236,13 +272,8 @@ async def handle_login_start(request: Request) -> JSONResponse:
         return JSONResponse({"error": "email required"}, status_code=400)
 
     attempt_id = f"attempt-{uuid4().hex[:8]}"
-    asyncio.create_task(_do_browser_login(attempt_id, email))
-
-    return JSONResponse({
-        "attempt_id": attempt_id,
-        "delivery": "email",
-        "expires_in_seconds": 600,
-    })
+    result = await _do_browser_login(attempt_id, email)
+    return JSONResponse(result)
 
 
 async def handle_login_verify(request: Request) -> JSONResponse:

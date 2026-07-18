@@ -22,6 +22,16 @@ async def handle_login(
     if not code:
         async def start(cid: str) -> ToolResponse:
             data = await runtime.start_login(email, correlation_id=cid)
+            if data.get("ok") is False:
+                return ToolResponse(
+                    ok=False,
+                    status="error",
+                    data=data,
+                    message=(
+                        "Luma login did not reach the email-code screen. "
+                        "The runtime may be blocked by Luma or the login page changed."
+                    ),
+                )
             return ToolResponse(
                 status="needs_input",
                 data=data,
@@ -48,4 +58,3 @@ async def handle_login(
         return ToolResponse(data=data, message="Login verified.")
 
     return await runtime_envelope(verify)
-
