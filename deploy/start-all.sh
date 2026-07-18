@@ -2,7 +2,11 @@
 set -eu
 
 cd /app/runtime
-uv run lumabot-runtime &
+if [ "${HEADLESS:-true}" = "false" ] && command -v xvfb-run >/dev/null 2>&1; then
+  xvfb-run -a -s "-screen 0 1440x1200x24" uv run lumabot-runtime &
+else
+  uv run lumabot-runtime &
+fi
 runtime_pid="$!"
 
 cleanup() {
