@@ -1,0 +1,72 @@
+{
+  "scraped_at": "2026-07-17T23:55:42.512413+00:00",
+  "source_url": "https://lu.ma/sf",
+  "event_count": 5,
+  "events": [
+    {
+      "title": "WorkOS Agent Night",
+      "url": "https://lu.ma/agent-night",
+      "date": "17:00",
+      "venue": "The Regency Ballroom",
+      "organizer": "By WorkOS & Michael Grinich",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/uploads/7t/7aa980a5-4f71-47ae-9414-0fc2d629b1f9.gif",
+      "status": null,
+      "attendees": "+965",
+      "is_live": false,
+      "interest_score": 0.3,
+      "interest_reason": "Networking opportunity, but not directly related to AI or social impact."
+    },
+    {
+      "title": "Low-Key Data Happy Hour - San Francisco",
+      "url": "https://lu.ma/wcd1kx5o",
+      "date": "18:00",
+      "venue": "Hawthorn SF Nightclub and Lounge",
+      "organizer": "By Paul Dudley, Jacqueline Au & Tony Fancher",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/uploads/c1/8af273d4-89c8-4f82-9aa5-9540be213178.png",
+      "status": "Going",
+      "attendees": "+58",
+      "is_live": false,
+      "interest_score": 0.2,
+      "interest_reason": "Social event with little focus on user interests."
+    },
+    {
+      "title": "Create for Good",
+      "url": "https://lu.ma/ghnew59o",
+      "date": "17:30",
+      "venue": "Palace of Fine Arts Theatre",
+      "organizer": "By Kris, Chana Messinger, Aric Floyd & Justin Portela",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/event-covers/ai/0de1e5ab-e334-4614-81e1-a566b8b2bb86.png",
+      "status": "US$20",
+      "attendees": "+120",
+      "is_live": false,
+      "interest_score": 0.8,
+      "interest_reason": "Aligns well with interests in creative technology and social impact."
+    },
+    {
+      "title": "Up After Dark - TailscaleUp's Official Afterparty",
+      "url": "https://lu.ma/gkhrxqkw",
+      "date": "19:00",
+      "venue": "The Hibernia",
+      "organizer": "By Tailscale, Rootly, Platform Engineering, Heavybit & 1 other",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/uploads/nn/3e7b3462-fc41-4b54-943a-5addeaad59f6.png",
+      "status": null,
+      "attendees": null,
+      "is_live": false,
+      "interest_score": 0.4,
+      "interest_reason": "Afterparty event may not align with professional interests."
+    },
+    {
+      "title": "Step SF 2026: The AI & Tech Startup Festival",
+      "url": "https://lu.ma/StepSF26",
+      "date": "9:00",
+      "venue": "The Midway",
+      "organizer": "By Step, Steven Echtman, Ash Kumra, Ray Dargham & 2 others",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/event-covers/yy/02fbec04-8b0c-4895-98df-ffdc873fb1c9.png",
+      "status": "US$78.75",
+      "attendees": "+188",
+      "is_live": false,
+      "interest_score": 1.0,
+      "interest_reason": "Directly related to AI and tech startups, highly relevant to user profile."
+    }
+  ]
+}

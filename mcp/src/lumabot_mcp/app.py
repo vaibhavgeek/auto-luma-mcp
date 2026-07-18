@@ -18,6 +18,11 @@ from lumabot_mcp.runtime_client import FakeRuntimeClient, HttpRuntimeClient, Run
 from lumabot_mcp.settings import Settings
 from lumabot_mcp.tools.actions import handle_confirm_action
 from lumabot_mcp.tools.check_login import handle_check_login
+from lumabot_mcp.tools.discover import (
+    handle_discover_events,
+    handle_inspect_registration,
+    handle_register_event,
+)
 from lumabot_mcp.tools.events import handle_get_user_events, handle_recommend_events
 from lumabot_mcp.tools.jobs import handle_get_job_status
 from lumabot_mcp.tools.login import handle_login
@@ -77,6 +82,55 @@ def create_mcp_server(runtime: RuntimeClient | None = None) -> FastMCP:
         """Check if a saved Luma session exists and is still valid."""
         log_tool_call(logger, "check_login", {"email": email})
         return await handle_check_login(runtime_client, email=email)
+
+    @mcp.tool()
+    async def discover_events(
+        email: Annotated[
+            str,
+            Field(description="Email of the logged-in user (to load session cookies)."),
+        ],
+    ) -> ToolResponse:
+        """Scrape luma.com/sf for events, score interest with LLM, store results."""
+        log_tool_call(logger, "discover_events", {"email": email})
+        return await handle_discover_events(runtime_client, email=email)
+
+    @mcp.tool()
+    async def inspect_registration(
+        email: Annotated[
+            str,
+            Field(description="Email of the logged-in user."),
+        ],
+        event_url: Annotated[
+            str,
+            Field(description="Full URL of the Luma event to inspect registration for."),
+        ],
+    ) -> ToolResponse:
+        """Navigate to an event, click Join, and return the registration form fields."""
+        log_tool_call(logger, "inspect_registration", {"email": email, "event_url": event_url})
+        return await handle_inspect_registration(runtime_client, email=email, event_url=event_url)
+
+    @mcp.tool()
+    async def register_event(
+        email: Annotated[
+            str,
+            Field(description="Email of the logged-in user."),
+        ],
+        event_url: Annotated[
+            str,
+            Field(description="Full URL of the Luma event to register for."),
+        ],
+        form_data: Annotated[
+            str,
+            Field(description="JSON string of form field name-value pairs to submit."),
+        ],
+    ) -> ToolResponse:
+        """Fill and submit the registration form for a Luma event."""
+        import json as _json
+        parsed = _json.loads(form_data)
+        log_tool_call(logger, "register_event", {"email": email, "event_url": event_url})
+        return await handle_register_event(
+            runtime_client, email=email, event_url=event_url, form_data=parsed
+        )
 
     @mcp.tool()
     async def set_user_profile(

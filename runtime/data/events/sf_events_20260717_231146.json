@@ -1,0 +1,57 @@
+{
+  "scraped_at": "2026-07-17T23:11:46.023894+00:00",
+  "source_url": "https://lu.ma/sf",
+  "event_count": 5,
+  "events": [
+    {
+      "title": "WorkOS Agent Night",
+      "url": "https://luma.com/agent-night",
+      "date": "17:00",
+      "venue": "The Regency Ballroom",
+      "organizer": "By WorkOS & Michael Grinich",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/uploads/7t/7aa980a5-4f71-47ae-9414-0fc2d629b1f9.gif",
+      "description": "17:00\nWorkOS Agent Night\n\u200b\nBy WorkOS & Michael Grinich\n\u200b\nThe Regency Ballroom\n+965",
+      "attendees": "+965"
+    },
+    {
+      "title": "Low-Key Data Happy Hour - San Francisco",
+      "url": "https://luma.com/wcd1kx5o",
+      "date": "18:00",
+      "venue": "Hawthorn SF Nightclub and Lounge",
+      "organizer": "By Paul Dudley, Jacqueline Au & Tony Fancher",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/uploads/c1/8af273d4-89c8-4f82-9aa5-9540be213178.png",
+      "description": "18:00\nLow-Key Data Happy Hour - San Francisco\n\u200b\nBy Paul Dudley, Jacqueline Au & Tony Fancher\n\u200b\nHawthorn SF Nightclub and Lounge\n+56",
+      "attendees": "+56"
+    },
+    {
+      "title": "Create for Good",
+      "url": "https://luma.com/ghnew59o",
+      "date": "17:30",
+      "venue": "\u200b",
+      "organizer": "By Kris, Chana Messinger, Aric Floyd & Justin Portela",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/event-covers/ai/0de1e5ab-e334-4614-81e1-a566b8b2bb86.png",
+      "description": "17:30\nCreate for Good\n\u200b\nBy Kris, Chana Messinger, Aric Floyd & Justin Portela\n\u200b\nPalace of Fine Arts Theatre\n\u200b\nUS$20\n+119",
+      "attendees": "\u200b\nUS$20\n+119"
+    },
+    {
+      "title": "Up After Dark - TailscaleUp's Official Afterparty",
+      "url": "https://luma.com/gkhrxqkw",
+      "date": "19:00",
+      "venue": "The Hibernia",
+      "organizer": "By Tailscale, Rootly, Platform Engineering, Heavybit & 1 other",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/uploads/nn/3e7b3462-fc41-4b54-943a-5addeaad59f6.png",
+      "description": "19:00\nUp After Dark - TailscaleUp's Official Afterparty\n\u200b\nBy Tailscale, Rootly, Platform Engineering, Heavybit & 1 other\n\u200b\nThe Hibernia",
+      "attendees": null
+    },
+    {
+      "title": "Step SF 2026: The AI & Tech Startup Festival",
+      "url": "https://luma.com/StepSF26",
+      "date": "9:00",
+      "venue": "\u200b",
+      "organizer": "By Step, Steven Echtman, Ash Kumra, Ray Dargham & 2 others",
+      "image_url": "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,anim=false,background=white,quality=75,width=180,height=180/event-covers/yy/02fbec04-8b0c-4895-98df-ffdc873fb1c9.png",
+      "description": "9:00\nStep SF 2026: The AI & Tech Startup Festival\n\u200b\nBy Step, Steven Echtman, Ash Kumra, Ray Dargham & 2 others\n\u200b\nThe Midway\n\u200b\nUS$78.75\n+187",
+      "attendees": "\u200b\nUS$78.75\n+187"
+    }
+  ]
+}

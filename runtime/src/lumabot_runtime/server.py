@@ -10,18 +10,24 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-import httpx
 from playwright.async_api import Browser, Page, async_playwright
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
+from lumabot_runtime.cron import (
+    fill_form_with_llm,
+    inspect_event_registration,
+    load_user_profile,
+    run_cron,
+    save_user_profile,
+    submit_event_registration,
+)
+
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
 LUMA_SIGNIN_URL = "https://lu.ma/signin"
 LUMA_HOME_URL = "https://lu.ma/home"
@@ -77,60 +83,26 @@ state = RuntimeState()
 # ─── Session persistence ───────────────────────────────────────────────────────
 
 async def save_session_to_db(email: str, session_data: dict[str, Any]) -> None:
-    """Save session locally (and to Supabase if configured)."""
+    """Save session locally and to database."""
     os.makedirs(SESSIONS_DIR, exist_ok=True)
     filepath = os.path.join(SESSIONS_DIR, f"{email.replace('@', '_at_')}.json")
     with open(filepath, "w") as f:
         json.dump(session_data, f, indent=2, default=str)
     logger.info("Session saved to %s", filepath)
 
-    if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
-        try:
-            async with httpx.AsyncClient() as client:
-                await client.post(
-                    f"{SUPABASE_URL}/rest/v1/luma_sessions",
-                    headers={
-                        "apikey": SUPABASE_SERVICE_ROLE_KEY,
-                        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
-                        "Content-Type": "application/json",
-                        "Prefer": "resolution=merge-duplicates",
-                    },
-                    json={
-                        "email": email,
-                        "session_data": json.dumps(session_data, default=str),
-                        "authenticated": session_data.get("authenticated", False),
-                    },
-                )
-                logger.info("Session also saved to Supabase for %s", email)
-        except Exception as exc:
-            logger.warning("Supabase save failed: %s", exc)
+    from lumabot_runtime.db import save_session_to_db as db_save_session
+    await db_save_session(email, session_data)
 
 
 async def load_session_from_db(email: str) -> dict[str, Any] | None:
-    """Load session from local file (or Supabase)."""
+    """Load session from local file, falling back to database."""
     filepath = os.path.join(SESSIONS_DIR, f"{email.replace('@', '_at_')}.json")
     if os.path.exists(filepath):
         with open(filepath) as f:
             return json.load(f)
 
-    if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(
-                    f"{SUPABASE_URL}/rest/v1/luma_sessions",
-                    headers={
-                        "apikey": SUPABASE_SERVICE_ROLE_KEY,
-                        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
-                    },
-                    params={"email": f"eq.{email}", "select": "*", "limit": "1"},
-                )
-                if resp.status_code == 200:
-                    rows = resp.json()
-                    if rows:
-                        return json.loads(rows[0]["session_data"])
-        except Exception as exc:
-            logger.warning("Supabase load failed: %s", exc)
-    return None
+    from lumabot_runtime.db import load_session_from_db as db_load_session
+    return await db_load_session(email)
 
 
 # ─── Login handlers ────────────────────────────────────────────────────────────
@@ -327,12 +299,21 @@ async def handle_check_login(request: Request) -> JSONResponse:
 async def handle_set_profile(request: Request) -> JSONResponse:
     body = await request.json()
     profile_text = body.get("profile_text", "")
+    email = body.get("email", "vaibhavblogger@gmail.com")
     words = [w.strip("., ").lower() for w in profile_text.split() if len(w.strip("., ")) > 4]
     state.profile = {
         "profile_text": profile_text,
         "interests": sorted(set(words[:5])),
         "location": "San Francisco, CA",
+        "email": email,
     }
+    # Save locally
+    save_user_profile(email, state.profile)
+
+    # Save to database
+    from lumabot_runtime.db import save_profile_to_db
+    await save_profile_to_db(email, state.profile)
+
     return JSONResponse({"profile": state.profile})
 
 
@@ -413,6 +394,43 @@ async def handle_confirm_action(request: Request) -> JSONResponse:
     return JSONResponse({"action_id": action_id, "status": "confirmed", "confirmation_token_used": bool(body.get("confirmation_token"))})
 
 
+async def handle_discover_events(request: Request) -> JSONResponse:
+    """Trigger scraping of luma.com/sf and return discovered events."""
+    body = await request.json()
+    email = body.get("email")
+    if not email:
+        return JSONResponse({"error": "email required"}, status_code=400)
+
+    # Fire and forget for the heavy scraping, but return immediately with status
+    result = await run_cron(email)
+    return JSONResponse(result)
+
+
+async def handle_inspect_registration(request: Request) -> JSONResponse:
+    """Inspect a registration form for an event."""
+    body = await request.json()
+    email = body.get("email")
+    event_url = body.get("event_url")
+    if not email or not event_url:
+        return JSONResponse({"error": "email and event_url required"}, status_code=400)
+
+    result = await inspect_event_registration(email, event_url)
+    return JSONResponse(result)
+
+
+async def handle_submit_registration(request: Request) -> JSONResponse:
+    """Submit a registration form for an event."""
+    body = await request.json()
+    email = body.get("email")
+    event_url = body.get("event_url")
+    form_data = body.get("form_data", {})
+    if not email or not event_url:
+        return JSONResponse({"error": "email and event_url required"}, status_code=400)
+
+    result = await submit_event_registration(email, event_url, form_data)
+    return JSONResponse(result)
+
+
 async def health(request: Request) -> JSONResponse:
     return JSONResponse({"ok": True, "status": "healthy"})
 
@@ -429,6 +447,9 @@ app = Starlette(
         Route("/login/start", handle_login_start, methods=["POST"]),
         Route("/login/verify", handle_login_verify, methods=["POST"]),
         Route("/login/check", handle_check_login, methods=["POST"]),
+        Route("/discover/events", handle_discover_events, methods=["POST"]),
+        Route("/register/inspect", handle_inspect_registration, methods=["POST"]),
+        Route("/register/submit", handle_submit_registration, methods=["POST"]),
         Route("/profile", handle_set_profile, methods=["PUT"]),
         Route("/events/recommendations", handle_recommend_events, methods=["POST"]),
         Route("/users/events", handle_get_user_events, methods=["GET"]),

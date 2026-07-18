@@ -24,6 +24,16 @@ class RuntimeClient(Protocol):
 
     async def check_login(self, email: str, *, correlation_id: str) -> JSONDict: ...
 
+    async def discover_events(self, email: str, *, correlation_id: str) -> JSONDict: ...
+
+    async def inspect_registration(
+        self, email: str, event_url: str, *, correlation_id: str
+    ) -> JSONDict: ...
+
+    async def submit_registration(
+        self, email: str, event_url: str, form_data: dict[str, str], *, correlation_id: str
+    ) -> JSONDict: ...
+
     async def set_profile(self, profile_text: str, *, correlation_id: str) -> JSONDict: ...
 
     async def recommend_events(
@@ -112,6 +122,34 @@ class HttpRuntimeClient:
             "POST",
             "/login/check",
             json={"email": email},
+            correlation_id=correlation_id,
+        )
+
+    async def discover_events(self, email: str, *, correlation_id: str) -> JSONDict:
+        return await self._request(
+            "POST",
+            "/discover/events",
+            json={"email": email},
+            correlation_id=correlation_id,
+        )
+
+    async def inspect_registration(
+        self, email: str, event_url: str, *, correlation_id: str
+    ) -> JSONDict:
+        return await self._request(
+            "POST",
+            "/register/inspect",
+            json={"email": email, "event_url": event_url},
+            correlation_id=correlation_id,
+        )
+
+    async def submit_registration(
+        self, email: str, event_url: str, form_data: dict[str, str], *, correlation_id: str
+    ) -> JSONDict:
+        return await self._request(
+            "POST",
+            "/register/submit",
+            json={"email": email, "event_url": event_url, "form_data": form_data},
             correlation_id=correlation_id,
         )
 
@@ -306,6 +344,42 @@ class FakeRuntimeClient:
             "session_exists": True,
             "current_url": "https://lu.ma/home",
             "message": "Session is valid.",
+        }
+
+    async def discover_events(self, email: str, *, correlation_id: str) -> JSONDict:
+        await self._maybe_delay()
+        self._maybe_fail_auth()
+        return {
+            "scraped_at": "2026-07-17T00:00:00Z",
+            "event_count": 2,
+            "events": self.fixture_events,
+        }
+
+    async def inspect_registration(
+        self, email: str, event_url: str, *, correlation_id: str
+    ) -> JSONDict:
+        await self._maybe_delay()
+        self._maybe_fail_auth()
+        return {
+            "event_url": event_url,
+            "form_fields": [
+                {"name": "name", "label": "Full Name", "type": "text", "required": True},
+                {"name": "email", "label": "Email", "type": "email", "required": True},
+                {"name": "company", "label": "Company", "type": "text", "required": False},
+            ],
+            "has_captcha": False,
+        }
+
+    async def submit_registration(
+        self, email: str, event_url: str, form_data: dict[str, str], *, correlation_id: str
+    ) -> JSONDict:
+        await self._maybe_delay()
+        self._maybe_fail_auth()
+        return {
+            "event_url": event_url,
+            "submitted": True,
+            "success": True,
+            "current_url": event_url,
         }
 
     async def set_profile(self, profile_text: str, *, correlation_id: str) -> JSONDict:
