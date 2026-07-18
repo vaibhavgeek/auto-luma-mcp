@@ -25,9 +25,11 @@ async def generate_event_report(
     report_people: list[ReportPerson] = []
     enriched_by_id = {person.person_id: person for person in enriched_people}
     for attendee in attendees:
-        match = resolver.match(attendee, enriched_people)
-        person = enriched_by_id.get(match.person_id or "")
+        person = enriched_by_id.get(attendee.person_id)
+        match = None if person is not None else resolver.match(attendee, enriched_people)
+        identity_confidence = 1.0 if person is not None else match.confidence
         if person is None:
+            assert match is not None
             status = EnrichmentStatus.IDENTITY_UNCERTAIN if match.candidates else EnrichmentStatus.ENRICHMENT_PENDING
             report_people.append(
                 ReportPerson(
@@ -43,12 +45,12 @@ async def generate_event_report(
         person_score = score_person(
             user_profile=user_profile,
             person=person,
-            identity_confidence=match.confidence,
+            identity_confidence=identity_confidence,
             event_context=event.description,
         )
         status = (
             EnrichmentStatus.IDENTITY_UNCERTAIN
-            if match.confidence < 0.75
+            if identity_confidence < 0.75
             else person.enrichment_status
         )
         report_people.append(
@@ -56,7 +58,7 @@ async def generate_event_report(
                 attendee=attendee,
                 enrichment_status=status,
                 relevance_score=person_score,
-                identity_confidence=match.confidence,
+                identity_confidence=identity_confidence,
                 company=_value(person.company_name),
                 company_size=_value(person.company_employee_count),
                 funding_stage=_value(person.company_stage),
@@ -64,7 +66,7 @@ async def generate_event_report(
                 why_the_person_matters=_why(person, person_score.score),
                 conversation_opener=_opener(attendee, event, person),
                 evidence_links=_links(person),
-                uncertainty_warnings=[] if match.matched else match.evidence,
+                uncertainty_warnings=[] if match is None or match.matched else match.evidence,
             )
         )
     ranked = sorted(
@@ -119,4 +121,3 @@ def _summary(event: Event, attendee_count: int, enriched_count: int) -> str:
         f"{event.title} has {attendee_count} visible attendees; "
         f"{enriched_count} have enrichment useful for prioritization."
     )
-

@@ -18,6 +18,7 @@ services:
       - HEADLESS=true
       - LUMABOT_ENRICHMENT_PROVIDER=visible
       - ZERO_MAX_PAY_USDC=0.25
+      - PDL_MIN_LIKELIHOOD=1
 profiles:
   compute:
     lumabot:

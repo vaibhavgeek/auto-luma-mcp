@@ -22,17 +22,18 @@ class ZeroCapabilityClient:
     zero_bin: str = "zero"
     max_pay_usdc: str = "0.25"
     timeout_seconds: int = 60
+    pdl_min_likelihood: int = 1
     pdl_person_capability: str = DEFAULT_PDL_PERSON_CAPABILITY
     pdl_company_capability: str = DEFAULT_PDL_COMPANY_CAPABILITY
     email_verify_capability: str = DEFAULT_EMAIL_VERIFY_CAPABILITY
 
     async def enrich_person(self, person: RawPerson) -> EnrichedPerson:
-        payload = _zero_http_payload(_person_body(person))
+        payload = _person_body(person, min_likelihood=self.pdl_min_likelihood)
         result = await self._fetch(self.pdl_person_capability, payload)
         return person_from_pdl(person.person_id, _provider_body(result))
 
     async def enrich_company(self, company: RawCompany) -> EnrichedCompany:
-        payload = _zero_http_payload(_company_body(company))
+        payload = _company_body(company, min_likelihood=self.pdl_min_likelihood)
         result = await self._fetch(self.pdl_company_capability, payload)
         return company_from_pdl(company.company_id, _provider_body(result))
 
@@ -102,34 +103,27 @@ class ZeroCapabilityClient:
         return payload
 
 
-def _zero_http_payload(body: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "input": {
-            "type": "http",
-            "method": "POST",
-            "bodyType": "json",
-            "body": {key: value for key, value in body.items() if value not in (None, "", [])},
+def _person_body(person: RawPerson, *, min_likelihood: int) -> dict[str, Any]:
+    return _compact(
+        {
+            "name": person.full_name,
+            "email": person.email,
+            "profile": person.social_urls[0] if person.social_urls else None,
+            "company": person.company or person.company_domain,
+            "location": person.location,
+            "min_likelihood": min_likelihood,
         }
-    }
+    )
 
 
-def _person_body(person: RawPerson) -> dict[str, Any]:
-    return {
-        "name": person.full_name,
-        "email": person.email,
-        "profile": person.social_urls[0] if person.social_urls else None,
-        "company": person.company or person.company_domain,
-        "location": person.location,
-        "min_likelihood": 5,
-    }
-
-
-def _company_body(company: RawCompany) -> dict[str, Any]:
-    return {
-        "name": company.name,
-        "website": company.website,
-        "min_likelihood": 5,
-    }
+def _company_body(company: RawCompany, *, min_likelihood: int) -> dict[str, Any]:
+    return _compact(
+        {
+            "name": company.name,
+            "website": company.website,
+            "min_likelihood": min_likelihood,
+        }
+    )
 
 
 def _provider_body(result: dict[str, Any]) -> dict[str, Any]:
@@ -145,9 +139,19 @@ def _provider_body(result: dict[str, Any]) -> dict[str, Any]:
         candidate = parsed if isinstance(parsed, dict) else {}
     if "body" in candidate and isinstance(candidate["body"], dict):
         candidate = candidate["body"]
-    if "data" in candidate and isinstance(candidate["data"], dict) and set(candidate) <= {"data", "success", "meta"}:
+    if "data" in candidate and isinstance(candidate["data"], dict) and set(candidate) <= {
+        "data",
+        "success",
+        "meta",
+        "status",
+        "likelihood",
+    }:
         return candidate["data"]
     return candidate
+
+
+def _compact(body: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in body.items() if value not in (None, "", [])}
 
 
 def _nested_data(payload: dict[str, Any]) -> dict[str, Any]:

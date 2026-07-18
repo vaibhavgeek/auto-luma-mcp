@@ -22,6 +22,8 @@ Update `deploy/akash.yml` to use the pushed image name before deploying.
 - `LUMABOT_ENRICHMENT_PROVIDER=zero` calls Zero capabilities for PDL/email
   enrichment.
 - `ZERO_MAX_PAY_USDC` caps the per-call Zero spend.
+- `PDL_MIN_LIKELIHOOD=1` works best for sparse Luma-visible profiles; raise it
+  when you have stronger identifiers.
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` let the runtime load/store
   saved Luma sessions outside the container filesystem.
 
